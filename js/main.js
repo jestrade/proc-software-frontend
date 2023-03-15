@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api/tasks";
+const API_URL = "MY_URL";
 
 const taskInput = document.querySelector(".task-input input");
 const filters = document.querySelectorAll(".filters span");
@@ -29,7 +29,7 @@ const loadTasks = (filter) => {
                     todos.forEach((todo) => {
                         let completed = todo.status == "completed" ? "checked" : "";
                         if (filter == todo.status || filter == "all") {
-                            liTag += `<li class="task">
+                            liTag += `<li class="task" id="todo_${todo._id}">
                             <label for="${todo._id}">
                                 <input onclick="updateStatus(this)" type="checkbox" id="${todo._id}" ${completed}>
                                 <p class="${completed}">${todo.content}</p>
@@ -37,7 +37,7 @@ const loadTasks = (filter) => {
                             <div class="settings">
                                 <i onclick="showMenu(this)" class="uil uil-ellipsis-h"></i>
                                 <ul class="task-menu">
-                                    <li onclick='deleteTask(${todo._id}, "${filter}")'><i class="uil uil-trash"></i>Delete</li>
+                                    <li onclick="deleteTask(this)" id="${todo._id}"><i class="uil uil-trash"></i>Delete</li>
                                 </ul>
                             </div>
                         </li>`;
@@ -70,7 +70,6 @@ const showMenu = (selectedTask) => {
 taskInput.addEventListener("keyup", e => {
     let userTask = taskInput.value.trim();
     if (e.key == "Enter" && userTask) {
-        console.log("Create Task");
         todos = !todos ? [] : todos;
         let data = { content: userTask, status: "pending" };
 
@@ -95,7 +94,6 @@ taskInput.addEventListener("keyup", e => {
 });
 
 const updateStatus = (selectedTask) => {
-    console.log("Update Task");
     const { id, checked, parentElement } = selectedTask;
     const status = checked ? "completed" : "pending";
 
@@ -125,8 +123,8 @@ const updateStatus = (selectedTask) => {
         });
 }
 
-const deleteTask = (id, filter) => {
-    console.log("Delete Task", id, filter);
+const deleteTask = (selectedTask) => {
+    const { id } = selectedTask;
     const options = {
         method: "DELETE",
         headers: {
@@ -136,7 +134,8 @@ const deleteTask = (id, filter) => {
     fetch(`${API_URL}/${id}`, options)
         .then(res => res.json())
         .then((json) => {
-            loadTasks(filter);
+            let taskName = document.getElementById(`todo_${id}`);
+            taskName.remove();
         })
         .catch(error => {
             console.log("error", error);
@@ -144,7 +143,6 @@ const deleteTask = (id, filter) => {
 }
 
 clearAll.addEventListener("click", () => {
-    console.log("Clear All");
     const options = {
         method: "DELETE"
     }
