@@ -1,3 +1,4 @@
+const API_URL = "http://localhost:3000/api/tasks";
 
 const taskInput = document.querySelector(".task-input input");
 const filters = document.querySelectorAll(".filters span");
@@ -12,12 +13,12 @@ filters.forEach(btn => {
     btn.addEventListener("click", () => {
         document.querySelector("span.active").classList.remove("active");
         btn.classList.add("active");
-        showTodo(btn.id);
+        loadTasks(btn.id);
     });
 });
 
-const showTodo = (filter) => {
-    fetch("http://localhost:3000/api/tasks")
+const loadTasks = (filter) => {
+    fetch(API_URL)
         .then(res => res.json())
         .then(json => {
             const totalTasks = json?.data?.length;
@@ -53,7 +54,8 @@ const showTodo = (filter) => {
             console.log("error", error);
         });
 }
-showTodo("all");
+
+loadTasks("all");
 
 const showMenu = (selectedTask) => {
     let menuDiv = selectedTask.parentElement.lastElementChild;
@@ -68,42 +70,91 @@ const showMenu = (selectedTask) => {
 taskInput.addEventListener("keyup", e => {
     let userTask = taskInput.value.trim();
     if (e.key == "Enter" && userTask) {
-        if (!isEditTask) {
-            todos = !todos ? [] : todos;
-            let taskInfo = { content: userTask, status: "pending" };
-            todos.push(taskInfo);
-        } else {
-            isEditTask = false;
-            todos[editId].content = userTask;
-        }
-        taskInput.value = "";
-        // localStorage.setItem("todo-list", JSON.stringify(todos));
-        showTodo(document.querySelector("span.active").id);
+        console.log("Create Task");
+        todos = !todos ? [] : todos;
+        let data = { content: userTask, status: "pending" };
+
+        const options = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        };
+
+        fetch(API_URL, options)
+            .then(res => res.json())
+            .then((json) => {
+                taskInput.value = "";
+                loadTasks(document.querySelector("span.active").id);
+            })
+            .catch(error => {
+                console.log("error", error);
+            });
     }
 });
 
 const updateStatus = (selectedTask) => {
-    let taskName = selectedTask.parentElement.lastElementChild;
-    if (selectedTask.checked) {
-        taskName.classList.add("checked");
-        todos[selectedTask.id].status = "completed";
-    } else {
-        taskName.classList.remove("checked");
-        todos[selectedTask.id].status = "pending";
-    }
-    localStorage.setItem("todo-list", JSON.stringify(todos))
+    console.log("Update Task");
+    const { id, checked, parentElement } = selectedTask;
+    const status = checked ? "completed" : "pending";
+
+    const data = {
+        status
+    };
+    const options = {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    };
+
+    fetch(`${API_URL}/${id}`, options)
+        .then(res => res.json())
+        .then((json) => {
+            let taskName = parentElement.lastElementChild;
+            if (checked) {
+                taskName.classList.add("checked");
+            } else {
+                taskName.classList.remove("checked");
+            }
+        })
+        .catch(error => {
+            console.log("error", error);
+        });
 }
 
-const deleteTask = (deleteId, filter) => {
-    isEditTask = false;
-    todos.splice(deleteId, 1);
-    localStorage.setItem("todo-list", JSON.stringify(todos));
-    showTodo(filter);
+const deleteTask = (id, filter) => {
+    console.log("Delete Task", id, filter);
+    const options = {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json"
+        },
+    }
+    fetch(`${API_URL}/${id}`, options)
+        .then(res => res.json())
+        .then((json) => {
+            loadTasks(filter);
+        })
+        .catch(error => {
+            console.log("error", error);
+        });
 }
 
 clearAll.addEventListener("click", () => {
-    isEditTask = false;
-    todos.splice(0, todos.length);
-    localStorage.setItem("todo-list", JSON.stringify(todos));
-    showTodo()
+    console.log("Clear All");
+    const options = {
+        method: "DELETE"
+    }
+    fetch(API_URL, options)
+        .then(res => res.json())
+        .then((json) => {
+            clearAll.classList.remove("active")
+            taskBox.innerHTML = "";
+        })
+        .catch(error => {
+            console.log("error", error);
+        });
 });
